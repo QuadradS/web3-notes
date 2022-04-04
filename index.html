@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <style>
+        * {
+            font-family: Arial;
+        }
+    </style>
+    <title>Document</title>
+</head>
+<body>
+<main>
+    <button onclick="connect()">Connect</button>
+    <button onclick="sendMsg()">sendMsg</button>
+    <button onclick="getLastMsg()">getLastMsg</button>
+    <h2 id="acc">---</h2>
+    <h3 id="last">---</h3>
+</main>
+</body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.7.2-rc.0/web3.min.js"
+        integrity="sha512-REWiGZVmhU2S5eIov/DuNrsq4djWnPaAHSvXrbLLLaI0r/gW+wh1utIzxt0iB4IQLgXhNDj5mR0YMBjrkKhVMA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+    const contractAbi = [
+        {
+            "inputs": [],
+            "stateMutability": "nonpayable",
+            "type": "constructor"
+        },
+        {
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": true,
+                    "internalType": "address",
+                    "name": "sender",
+                    "type": "address"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "string",
+                    "name": "_name",
+                    "type": "string"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "string",
+                    "name": "_m",
+                    "type": "string"
+                }
+            ],
+            "name": "ShowItem",
+            "type": "event"
+        },
+        {
+            "inputs": [],
+            "name": "getItem",
+            "outputs": [
+                {
+                    "components": [
+                        {
+                            "internalType": "uint256",
+                            "name": "id",
+                            "type": "uint256"
+                        },
+                        {
+                            "internalType": "string",
+                            "name": "name",
+                            "type": "string"
+                        },
+                        {
+                            "internalType": "string",
+                            "name": "m",
+                            "type": "string"
+                        }
+                    ],
+                    "internalType": "struct Messages.Message",
+                    "name": "",
+                    "type": "tuple"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "string",
+                    "name": "_name",
+                    "type": "string"
+                },
+                {
+                    "internalType": "string",
+                    "name": "_m",
+                    "type": "string"
+                }
+            ],
+            "name": "setItem",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "_it",
+                    "type": "address"
+                }
+            ],
+            "name": "test",
+            "outputs": [
+                {
+                    "internalType": "string",
+                    "name": "",
+                    "type": "string"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        }
+    ];
+    const contractAddress = "0x79BC974F6157464f77D1eEaa92c2A504C2006e21";//truffle // "0xc446020eB423FF382B76527c0c7A54C1B5ed94e6";// rinkebi
+    let account = null;
+    let web3 = null;
+    let messagesContract = null;
+
+    const address = document.querySelector('#acc');
+    const lastUser = document.querySelector('#last');
+
+
+    const connect = async () => {
+        web3 = new Web3(window.web3.currentProvider); //new Web3('HTTP://127.0.0.1:7545');
+        messagesContract = new web3.eth.Contract(contractAbi, contractAddress);
+
+        await window.ethereum.enable();
+
+        web3.eth.getAccounts().then(async (accs) => {
+            account = accs[0];
+            web3.eth.defaultAccount = account;
+            address.innerHTML = accs[0];
+            console.log(accs)
+        });
+
+        messagesContract.events.ShowItem((_, {returnValues}) => {
+            lastUser.innerHTML = `Your name is ${returnValues[1] || 'not posted'} your note is: ${returnValues[2]}`
+        })
+
+        console.log({messagesContract});
+    }
+
+    const sendMsg = async () => {
+        const name = prompt('Name');
+        const m = prompt('Message');
+        if(!name || !m) {
+            alert('Wrong values');
+            return;
+        }
+        await messagesContract.methods.setItem(name, m)
+            .send({from: account})
+    }
+
+    const getLastMsg = async () => {
+        const res = await messagesContract.methods.getItem().call({from: account})
+        lastUser.innerHTML = `Your name is ${res?.name || 'not posted'} your note is: ${res?.m}`
+        return res
+    }
+
+
+</script>
+</html>
